@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // Hoặc "sqlite", "mysql" tùy vào DB bạn dùng
+  url      = env("DATABASE_URL")
+}
+
+// Định nghĩa loại giao dịch
+enum TransactionType {
+  THU
+  CHI
+}
+
+// Định nghĩa quyền hạn người dùng
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+model User {
+  id            String        @id @default(cuid())
+  name          String?
+  email         String        @unique
+  passwordHash  String
+  role          Role          @default(MEMBER)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  transactions  Transaction[]
+}
+
+model Category {
+  id           String          @id @default(cuid())
+  name         String          @unique // Để dùng trong upsert theo name như code seed của bạn
+  type         TransactionType
+  icon         String?
+  color        String?
+  transactions Transaction[]
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  amount      Float
+  description String?
+  date        DateTime        @default(now())
+  type        TransactionType
+  note        String?
+  // Quan hệ với User
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+
+  // Quan hệ với Category
+  categoryId  String
+  category    Category        @relation(fields: [categoryId], references: [id])
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
