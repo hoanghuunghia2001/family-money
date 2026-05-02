@@ -14,7 +14,7 @@ interface Category {
 
 export default function NewTransactionPage() {
   const router = useRouter()
-  
+
   // States
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(false)
@@ -22,7 +22,7 @@ export default function NewTransactionPage() {
   const [mounted, setMounted] = useState(false)
 
   const today = new Date().toISOString().split('T')[0]
-  
+
   const [form, setForm] = useState({
     type: 'CHI' as 'THU' | 'CHI',
     amount: '',
@@ -44,6 +44,18 @@ export default function NewTransactionPage() {
       .catch((err) => console.error("Lỗi fetch categories:", err))
   }, [])
 
+  // Chuyển "1000" -> "1,000"
+  const formatNumber = (value: string) => {
+    if (!value) return "";
+    const number = value.replace(/\D/g, ""); // Xóa hết ký tự không phải số
+    return new Intl.NumberFormat('en-US').format(Number(number));
+  };
+
+  // Chuyển "1,000" -> "1000" để lưu vào database
+  const cleanNumber = (value: string) => {
+    return value.replace(/\D/g, "");
+  };
+
   // Sử dụng useMemo để lọc danh mục mượt mà hơn
   const filteredCats = useMemo(() => {
     return categories.filter((c) => c.type === form.type)
@@ -61,32 +73,32 @@ export default function NewTransactionPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.amount || !form.categoryId) return
-    
+
     setLoading(true)
     try {
       const res = await fetch('/api/list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          ...form, 
-          amount: parseFloat(form.amount) 
+        body: JSON.stringify({
+          ...form,
+          amount: parseFloat(form.amount)
         }),
       })
 
       if (!res.ok) throw new Error('Network response was not ok')
-      
+
       setSuccess(true)
       window.scrollTo({ top: 0, behavior: 'smooth' })
-      
+
       // Reset form sau 2 giây thành công
       setTimeout(() => {
         setSuccess(false)
-        setForm({ 
-          type: 'CHI', 
-          amount: '', 
-          categoryId: '', 
-          note: '', 
-          date: today 
+        setForm({
+          type: 'CHI',
+          amount: '',
+          categoryId: '',
+          note: '',
+          date: today
         })
       }, 2000)
     } catch (error) {
@@ -103,7 +115,7 @@ export default function NewTransactionPage() {
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 p-4 md:p-8 pb-24 font-sans">
       <div className="max-w-2xl mx-auto space-y-6">
-        
+
         {/* Header */}
         <header className="flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500">
           <div>
@@ -112,8 +124,8 @@ export default function NewTransactionPage() {
               <span className="bg-indigo-500/20 p-2 rounded-lg text-xl">➕</span> Nhập thu chi
             </h1>
           </div>
-          <Link 
-            href="/dashboard" 
+          <Link
+            href="/dashboard"
             className="h-10 w-10 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:text-white transition-colors"
           >
             ✕
@@ -127,7 +139,7 @@ export default function NewTransactionPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          
+
           {/* Loại giao dịch */}
           <section className="bg-[#1e293b] border border-slate-800 rounded-2xl p-5 shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-4 block">Phân loại</label>
@@ -137,11 +149,10 @@ export default function NewTransactionPage() {
                   key={t}
                   type="button"
                   onClick={() => handleSetField('type', t)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-bold transition-all duration-300 ${
-                    form.type === t 
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-bold transition-all duration-300 ${form.type === t
                       ? (t === 'CHI' ? 'bg-rose-600 text-white shadow-lg' : 'bg-emerald-600 text-white shadow-lg')
                       : 'text-slate-500 hover:bg-slate-800/50 hover:text-slate-300'
-                  }`}
+                    }`}
                 >
                   {t === 'CHI' ? '📉 Chi tiền' : '📈 Thu tiền'}
                 </button>
@@ -154,19 +165,23 @@ export default function NewTransactionPage() {
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">Số tiền (VNĐ)</label>
             <div className="relative group">
               <input
-                type="number"
-                inputMode="decimal"
+                type="text" // Chuyển từ number sang text để hiển thị được dấu phẩy
+                inputMode="numeric" // Vẫn hiện bàn phím số trên điện thoại
                 required
-                value={form.amount}
-                onChange={(e) => handleSetField('amount', e.target.value)}
+                value={formatNumber(form.amount)} // Hiển thị số có dấu phẩy
+                onChange={(e) => {
+                  const rawValue = cleanNumber(e.target.value);
+                  handleSetField('amount', rawValue); // Lưu giá trị thuần số vào state
+                }}
                 placeholder="0"
-                className={`w-full bg-[#0f172a] border-2 border-slate-800 rounded-xl py-5 px-6 text-3xl md:text-4xl font-mono font-bold text-right outline-none transition-all focus:border-indigo-500/50 ${
-                  form.type === 'THU' ? 'text-emerald-400' : 'text-rose-400'
-                }`}
+                className={`w-full bg-[#0f172a] border-2 border-slate-800 rounded-xl py-5 px-6 text-3xl md:text-4xl font-mono font-bold text-right outline-none transition-all focus:border-indigo-500/50 ${form.type === 'THU' ? 'text-emerald-400' : 'text-rose-400'
+                  }`}
               />
-              <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-600 font-bold text-xl">₫</span>
+              <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-600 font-bold text-xl">
+                ₫
+              </span>
             </div>
-            
+
             {/* Quick selection */}
             <div className="flex gap-2 mt-4 overflow-x-auto pb-2 no-scrollbar">
               {[50000, 100000, 200000, 500000, 1000000].map((amt) => (
@@ -185,7 +200,7 @@ export default function NewTransactionPage() {
           {/* Danh mục */}
           <section className="bg-[#1e293b] border border-slate-800 rounded-2xl p-5 shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-4 block">Chọn danh mục</label>
-            
+
             {filteredCats.length > 0 ? (
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                 {filteredCats.map((cat) => (
@@ -193,16 +208,14 @@ export default function NewTransactionPage() {
                     key={cat.id}
                     type="button"
                     onClick={() => handleSetField('categoryId', cat.id)}
-                    className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all duration-200 active:scale-90 ${
-                      form.categoryId === cat.id 
-                        ? 'bg-indigo-500/10 border-indigo-500 ring-4 ring-indigo-500/10' 
+                    className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all duration-200 active:scale-90 ${form.categoryId === cat.id
+                        ? 'bg-indigo-500/10 border-indigo-500 ring-4 ring-indigo-500/10'
                         : 'bg-[#0f172a] border-slate-800 hover:border-slate-600'
-                    }`}
+                      }`}
                   >
                     <span className="text-2xl mb-1">{cat.icon}</span>
-                    <span className={`text-[10px] font-bold text-center truncate w-full ${
-                      form.categoryId === cat.id ? 'text-indigo-400' : 'text-slate-400'
-                    }`}>
+                    <span className={`text-[10px] font-bold text-center truncate w-full ${form.categoryId === cat.id ? 'text-indigo-400' : 'text-slate-400'
+                      }`}>
                       {cat.name}
                     </span>
                   </button>
@@ -246,11 +259,10 @@ export default function NewTransactionPage() {
             <button
               type="submit"
               disabled={loading || !form.amount || !form.categoryId}
-              className={`flex-[2] py-4 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 ${
-                (!form.amount || !form.categoryId)
+              className={`flex-[2] py-4 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 ${(!form.amount || !form.categoryId)
                   ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
                   : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-indigo-500/25'
-              }`}
+                }`}
             >
               {loading ? (
                 <>

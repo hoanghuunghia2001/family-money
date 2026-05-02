@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/auth'
+import { revalidatePath } from 'next/cache'
 
 export async function GET(req: NextRequest) {
   const session = await getSession()
@@ -61,7 +62,9 @@ export async function POST(req: NextRequest) {
         date: new Date(date),
       },
       include: { category: true, user: { select: { id: true, name: true } } },
+
     })
+    revalidatePath('/dashboard')
 
     return NextResponse.json(transaction, { status: 201 })
   } catch (err) {

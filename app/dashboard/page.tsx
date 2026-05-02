@@ -1,3 +1,8 @@
+
+export const dynamic = 'force-dynamic';
+// Hoặc thiết lập thời gian revalidate (ví dụ: 0 giây)
+export const revalidate = 0;
+
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { formatCurrency } from '@/lib/utils'
